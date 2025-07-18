@@ -21,9 +21,8 @@ body {
     align-items: center;
     min-height: 100vh;
     color: var(--text-color-dark);
-    /* New: Important for mobile fixed layouts */
     height: 100vh;
-    overflow: hidden; /* Prevent body scroll */
+    overflow: hidden;
 }
 
 .hidden {
@@ -110,15 +109,14 @@ body {
     display: flex;
     width: 95%;
     max-width: 1200px;
-    height: 90vh; /* Original height */
-    /* New: For reliable full height on mobile */
-    height: calc(var(--vh, 1vh) * 90); /* Use custom property for more reliable vh */
-    min-height: 500px; /* Ensure a minimum height even if vh fails */
+    height: 90vh;
+    height: calc(var(--vh, 1vh) * 90);
+    min-height: 500px;
 
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden; /* Important for flex children */
+    overflow: hidden;
 }
 
 /* Sidebar */
@@ -202,7 +200,7 @@ body {
 #main-chat-area {
     flex-grow: 1;
     display: flex;
-    flex-direction: column; /* This is key for vertical layout */
+    flex-direction: column;
     transition: margin-left 0.3s ease-in-out;
 }
 
@@ -213,7 +211,6 @@ body {
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
     background-color: #f8f9fa;
-    /* New: Ensure header takes fixed height and doesn't scroll */
     flex-shrink: 0;
 }
 
@@ -259,9 +256,9 @@ body {
 
 
 #messages-container {
-    flex-grow: 1; /* Allow messages to fill available space */
+    flex-grow: 1;
     padding: 15px;
-    overflow-y: auto; /* This makes only the messages scrollable */
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
@@ -288,6 +285,12 @@ body {
     line-height: 1.4;
     word-wrap: break-word;
     position: relative;
+
+    /* NEW: Properties for better text wrapping and overflow handling */
+    word-break: break-word; /* Breaks long words that don't fit */
+    overflow-wrap: break-word; /* Ensures text wraps within its box */
+    white-space: pre-wrap; /* Preserves whitespace but allows wrapping */
+    min-width: 0; /* Important for flex items to shrink correctly */
 }
 
 .message.received .message-content {
@@ -360,7 +363,6 @@ body {
     border-top: 1px solid var(--border-color);
     background-color: #f8f9fa;
     align-items: center;
-    /* New: Ensure input area takes fixed height and doesn't scroll */
     flex-shrink: 0;
 }
 
@@ -503,7 +505,6 @@ body {
     #app-container {
         width: 98%;
         max-width: none;
-        /* Adjusted height with calc to account for mobile quirks */
         height: calc(var(--vh, 1vh) * 95);
     }
 
@@ -549,8 +550,8 @@ body {
     body {
         align-items: stretch;
         justify-content: flex-start;
-        height: 100vh; /* Ensure 100vh for mobile devices */
-        overflow: hidden; /* Prevent scrolling of the whole body */
+        height: 100vh;
+        overflow: hidden;
     }
 
     #auth-container {
@@ -560,8 +561,7 @@ body {
 
     #app-container {
         width: 100%;
-        /* New: Calculate height from actual window height to account for mobile browser UI */
-        height: 100vh; /* Will be adjusted by JS for proper visual viewport height */
+        height: 100vh;
         height: calc(var(--vh, 1vh) * 100);
         border-radius: 0;
         box-shadow: none;
@@ -572,7 +572,7 @@ body {
         padding: 15px;
         position: absolute;
         height: 100%;
-        height: calc(var(--vh, 1vh) * 100); /* Match app-container height */
+        height: calc(var(--vh, 1vh) * 100);
         top: 0;
         left: 0;
         z-index: 10;

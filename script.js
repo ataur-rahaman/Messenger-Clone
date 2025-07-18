@@ -30,10 +30,6 @@ const currentUserEmailSpan = document.getElementById('current-user-email');
 const logoutBtn = document.getElementById('logout-btn');
 
 const userAvatar = document.getElementById('user-avatar');
-// REMOVED: Profile picture upload related DOM elements
-// const profilePicInput = document.getElementById('profile-pic-input');
-// const uploadProfilePicBtn = document.getElementById('upload-profile-pic-btn');
-// const uploadStatus = document.getElementById('upload-status');
 
 const conversationList = document.getElementById('conversation-list');
 const usersList = document.getElementById('users-list');
@@ -44,7 +40,11 @@ const messagesContainer = document.getElementById('messages-container');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 
-const deleteChatBtn = document.getElementById('delete-chat-btn'); // New: Delete Chat Button
+const deleteChatBtn = document.getElementById('delete-chat-btn');
+const menuToggleBtn = document.getElementById('menu-toggle-btn'); // New: Hamburger Menu Button
+
+// New: Reference to the sidebar
+const sidebar = document.getElementById('sidebar');
 
 let currentUser = null;
 let currentChatId = 'general';
@@ -53,7 +53,7 @@ let messageListener = null;
 let typingListener = null;
 
 let typingTimeout;
-const TYPING_INDICATOR_TIMEOUT = 1500; // Increased to 1.5 seconds for better feel
+const TYPING_INDICATOR_TIMEOUT = 1500;
 
 // --- Helper Functions ---
 function generateChatId(uid1, uid2) {
@@ -65,10 +65,7 @@ function getDisplayName(email) {
     return email ? email.split('@')[0] : 'Unknown User';
 }
 
-// Function to get appropriate avatar URL (Google Photo or Placeholder)
 function getUserPhotoURL(user) {
-    // If user object has photoURL (typically from Google Auth), use it.
-    // Otherwise, use a generic placeholder.
     return user.photoURL || 'https://via.placeholder.com/40';
 }
 
@@ -89,13 +86,17 @@ function updateActiveChatUI() {
     } else {
         deleteChatBtn.classList.remove('hidden');
     }
+
+    // New: Hide sidebar after switching chat on mobile
+    if (window.innerWidth <= 768) { // Check for mobile viewport
+        sidebar.classList.remove('show-mobile');
+    }
 }
 
 function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Debounce function for typing indicator
 function debounce(func, delay) {
     let timeout;
     return function(...args) {
@@ -109,23 +110,20 @@ function debounce(func, delay) {
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         currentUser = user;
-        currentUserEmailSpan.textContent = user.email; // Initial display, might be updated from DB
+        currentUserEmailSpan.textContent = user.email;
         authContainer.classList.add('hidden');
         appContainer.classList.remove('hidden');
 
         const userRef = database.ref('users/' + user.uid);
-        userRef.on('value', (snapshot) => { // Listen for real-time updates of current user's profile
+        userRef.on('value', (snapshot) => {
             const userData = snapshot.val();
             if (userData) {
-                // Update current user object with data from DB
                 currentUser.displayName = userData.displayName || getDisplayName(currentUser.email);
-                currentUser.photoURL = userData.photoURL || 'https://via.placeholder.com/40'; // Use stored photoURL or default
+                currentUser.photoURL = userData.photoURL || 'https://via.placeholder.com/40';
                 
-                // Update UI with latest profile info
                 currentUserEmailSpan.textContent = currentUser.displayName;
                 userAvatar.src = currentUser.photoURL;
             } else {
-                // New user / First login - set initial data based on auth provider
                 const initialPhotoURL = user.photoURL || 'https://via.placeholder.com/40';
                 const initialDisplayName = user.displayName || getDisplayName(user.email);
 
@@ -135,7 +133,6 @@ auth.onAuthStateChanged(async (user) => {
                     photoURL: initialPhotoURL,
                     uid: user.uid
                 });
-                // Set current user object immediately for UI
                 currentUser.displayName = initialDisplayName;
                 currentUser.photoURL = initialPhotoURL;
                 currentUserEmailSpan.textContent = currentUser.displayName;
@@ -143,8 +140,8 @@ auth.onAuthStateChanged(async (user) => {
             }
         });
 
-        loadUsers(); // Load users for private chat
-        switchChat(currentChatId, currentChatName); // Load messages for default/last chat
+        loadUsers();
+        switchChat(currentChatId, currentChatName);
     } else {
         currentUser = null;
         authContainer.classList.remove('hidden');
@@ -152,9 +149,8 @@ auth.onAuthStateChanged(async (user) => {
         messagesContainer.innerHTML = '';
         usersList.innerHTML = '';
         conversationList.innerHTML = '<li class="active-chat" data-chat-id="general" data-chat-name="General Chat">General Chat</li>';
-        userAvatar.src = 'https://via.placeholder.com/40'; // Reset avatar
+        userAvatar.src = 'https://via.placeholder.com/40';
 
-        // Detach all Firebase listeners on logout
         if (messageListener) {
             database.ref('messages/' + currentChatId).off('child_added', messageListener);
             messageListener = null;
@@ -163,21 +159,17 @@ auth.onAuthStateChanged(async (user) => {
             database.ref('typingIndicators/' + currentChatId).off('value', typingListener);
             typingListener = null;
         }
-        database.ref('users').off(); // Detach user list listener
-        // Ensure to detach the specific 'value' listener for the current user's profile
-        if (user && user.uid) { // Check currentUser here as it might be null if logout happens without prior login
+        database.ref('users').off();
+        if (user && user.uid) {
             database.ref('users/' + user.uid).off();
         }
 
-        // Clear any pending typing status in database on logout for the user that was logged out
-        // Use a temporary user object if current is already null from `auth.onAuthStateChanged`
         if (user && currentChatId) {
              database.ref('typingIndicators/' + currentChatId + '/' + user.uid).remove();
         }
     }
 });
 
-// Event listeners for login/register/google login
 loginBtn.addEventListener('click', () => {
     const email = emailInput.value;
     const password = passwordInput.value;
@@ -198,11 +190,10 @@ registerBtn.addEventListener('click', () => {
     auth.createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
             const user = userCredential.user;
-            // For Email/Password users, set a default placeholder avatar
             database.ref('users/' + user.uid).set({
                 email: user.email,
                 displayName: user.email.split('@')[0],
-                photoURL: 'https://via.placeholder.com/40', // Placeholder for email/password users
+                photoURL: 'https://via.placeholder.com/40',
                 uid: user.uid
             });
             authStatus.textContent = "Registered successfully! You can now log in.";
@@ -219,7 +210,6 @@ googleLoginBtn.addEventListener('click', () => {
     auth.signInWithPopup(provider)
         .then((result) => {
             const user = result.user;
-            // For Google users, use their provided photoURL, or a placeholder if none
             database.ref('users/' + user.uid).set({
                 email: user.email,
                 displayName: user.displayName || getDisplayName(user.email),
@@ -249,10 +239,6 @@ logoutBtn.addEventListener('click', () => {
         });
 });
 
-// REMOVED: All profile picture upload related code.
-// profilePicInput.addEventListener('change', ...);
-// uploadProfilePicBtn.addEventListener('click', ...);
-
 
 // --- User List and Chat Switching ---
 conversationList.addEventListener('click', (e) => {
@@ -268,11 +254,11 @@ function loadUsers() {
     const usersRef = database.ref('users');
     usersList.innerHTML = '';
     usersRef.on('value', (snapshot) => {
-        usersList.innerHTML = ''; // Clear for fresh render
+        usersList.innerHTML = '';
         snapshot.forEach((childSnapshot) => {
             const user = childSnapshot.val();
             if (currentUser && user.uid === currentUser.uid) {
-                return; // Don't list the current user in the friends list
+                return;
             }
 
             const userElement = document.createElement('li');
@@ -281,7 +267,6 @@ function loadUsers() {
             userElement.dataset.chatId = generateChatId(currentUser.uid, user.uid);
             userElement.dataset.chatName = user.displayName;
             
-            // Use the photoURL stored in the database for friends' avatars
             const friendAvatarUrl = user.photoURL || 'https://via.placeholder.com/30';
 
             userElement.innerHTML = `
@@ -314,7 +299,6 @@ function switchChat(newChatId, newChatName) {
         return;
     }
 
-    // 1. Detach old listeners
     if (messageListener) {
         database.ref('messages/' + currentChatId).off('child_added', messageListener);
         messageListener = null;
@@ -323,20 +307,16 @@ function switchChat(newChatId, newChatName) {
         database.ref('typingIndicators/' + currentChatId).off('value', typingListener);
         typingListener = null;
     }
-    // Also remove any pending typing status of the current user from the OLD chat
     database.ref('typingIndicators/' + currentChatId + '/' + currentUser.uid).remove();
 
 
-    // 2. Update current chat variables
     currentChatId = newChatId;
     currentChatName = newChatName;
     messagesContainer.innerHTML = '';
-    typingIndicator.classList.add('hidden'); // Hide typing indicator initially
+    typingIndicator.classList.add('hidden');
 
-    // 3. Update UI
     updateActiveChatUI();
 
-    // 4. Attach new listeners for the new chat
     const messagesRef = database.ref('messages/' + currentChatId).orderByChild('timestamp');
     messageListener = messagesRef.on('child_added', (snapshot) => {
         const message = snapshot.val();
@@ -344,13 +324,11 @@ function switchChat(newChatId, newChatName) {
         scrollToBottom();
     });
 
-    // Attach typing indicator listener for the new chat
     const typingRef = database.ref('typingIndicators/' + currentChatId);
     typingListener = typingRef.on('value', (snapshot) => {
         const typingUsers = snapshot.val();
         const typers = [];
         if (typingUsers) {
-            // Fetch display names for all typing UIDs from the 'users' node
             const promises = Object.keys(typingUsers).map(uid => {
                 if (uid !== currentUser.uid) {
                     return database.ref('users/' + uid).once('value')
@@ -358,14 +336,14 @@ function switchChat(newChatId, newChatName) {
                             if (userSnap.exists()) {
                                 return userSnap.val().displayName;
                             }
-                            return 'Someone'; // Fallback if user data not found
+                            return 'Someone';
                         });
                 }
-                return null; // Don't process current user
-            }).filter(Boolean); // Remove nulls
+                return null;
+            }).filter(Boolean);
 
             Promise.all(promises).then(displayNames => {
-                const filteredDisplayNames = displayNames.filter(name => name !== 'Someone'); // Only show specific names
+                const filteredDisplayNames = displayNames.filter(name => name !== 'Someone');
                 if (filteredDisplayNames.length > 0) {
                     typingUsernameSpan.textContent = filteredDisplayNames.join(', ');
                     typingIndicator.classList.remove('hidden');
@@ -385,7 +363,7 @@ messageInput.addEventListener('input', () => {
 
     const typingRef = database.ref('typingIndicators/' + currentChatId + '/' + currentUser.uid);
     typingRef.set(true);
-    typingRef.onDisconnect().remove(); // Ensure it's removed if user closes browser
+    typingRef.onDisconnect().remove();
 
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
@@ -393,7 +371,6 @@ messageInput.addEventListener('input', () => {
     }, TYPING_INDICATOR_TIMEOUT);
 });
 
-// Clear typing status on message send (for both button click and enter key)
 const clearTypingStatusAndSendMessage = () => {
     clearTimeout(typingTimeout);
     if (currentUser) {
@@ -405,7 +382,7 @@ const clearTypingStatusAndSendMessage = () => {
 sendButton.addEventListener('click', clearTypingStatusAndSendMessage);
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-        e.preventDefault(); // Prevent default enter behavior (like new line)
+        e.preventDefault();
         clearTypingStatusAndSendMessage();
     }
 });
@@ -422,15 +399,15 @@ function sendMessage() {
     }
 
     const newMessageRef = database.ref('messages/' + currentChatId).push();
-    const messageId = newMessageRef.key; // Get the unique ID generated by push()
+    const messageId = newMessageRef.key;
 
     newMessageRef.set({
-        id: messageId, // Store the ID within the message object
+        id: messageId,
         text: messageText,
         senderId: currentUser.uid,
         senderEmail: currentUser.email,
         senderDisplayName: currentUser.displayName || getDisplayName(currentUser.email),
-        senderPhotoURL: currentUser.photoURL, // Now this will be Google's photoURL or a placeholder
+        senderPhotoURL: currentUser.photoURL,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     })
     .then(() => {
@@ -452,13 +429,11 @@ function displayMessage(message) {
     const date = new Date(message.timestamp);
     const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Use the senderPhotoURL from the message, which comes from their user profile
     const avatarSrc = message.senderPhotoURL || 'https://via.placeholder.com/40';
     const messageAvatar = `<img src="${avatarSrc}" alt="${message.senderDisplayName}" class="message-avatar">`;
 
     const senderInfo = isSentByCurrentUser ? '' : `<span class="sender-display-name">${message.senderDisplayName}</span><br>`;
 
-    // Add a delete button for sent messages
     const deleteButton = isSentByCurrentUser ? `<button class="delete-message-btn" data-message-id="${message.id}"><i class="fas fa-trash-alt"></i></button>` : '';
 
     messageElement.innerHTML = `
@@ -466,7 +441,8 @@ function displayMessage(message) {
         <div class="message-content-wrapper">
             <div class="message-content">
                 ${message.text}
-                ${deleteButton} </div>
+                ${deleteButton}
+            </div>
             <div class="message-info">
                 ${senderInfo}
                 ${timeString}
@@ -477,7 +453,6 @@ function displayMessage(message) {
 
     messagesContainer.appendChild(messageElement);
 
-    // Attach event listener to the delete button
     if (isSentByCurrentUser) {
         const btn = messageElement.querySelector('.delete-message-btn');
         if (btn) {
@@ -492,7 +467,6 @@ function displayMessage(message) {
 }
 
 
-// New function to delete a message
 function deleteMessage(chatId, messageId) {
     if (!currentUser) {
         alert("You must be logged in to delete messages.");
@@ -503,8 +477,6 @@ function deleteMessage(chatId, messageId) {
     messageRef.remove()
         .then(() => {
             console.log(`Message ${messageId} deleted from chat ${chatId}`);
-            // Remove the message from the UI immediately after successful deletion
-            // Find the button and then its closest ancestor with class 'message' to remove it
             const messageElement = document.querySelector(`.message .delete-message-btn[data-message-id="${messageId}"]`);
             if (messageElement) {
                 messageElement.closest('.message').remove();
@@ -516,7 +488,6 @@ function deleteMessage(chatId, messageId) {
         });
 }
 
-// New Event Listener for Delete Chat Button
 deleteChatBtn.addEventListener('click', () => {
     if (!currentUser) {
         alert("You must be logged in to delete chats.");
@@ -533,7 +504,6 @@ deleteChatBtn.addEventListener('click', () => {
     }
 });
 
-// New function to delete an entire chat
 function deleteChat(chatId) {
     if (!currentUser) {
         alert("You must be logged in to delete chats.");
@@ -546,7 +516,6 @@ function deleteChat(chatId) {
             console.log(`Chat ${chatId} messages deleted.`);
             alert(`Chat "${currentChatName}" has been cleared.`);
             
-            // After deleting, switch back to the General Chat
             switchChat('general', 'General Chat');
         })
         .catch((error) => {
@@ -554,6 +523,23 @@ function deleteChat(chatId) {
             alert("Failed to delete chat.");
         });
 }
+
+// New: Event listener for the hamburger menu button
+menuToggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('show-mobile'); // Toggle the class to show/hide
+});
+
+// Optional: Hide sidebar if user clicks outside of it while it's open
+document.addEventListener('click', (event) => {
+    if (window.innerWidth <= 768 && sidebar.classList.contains('show-mobile')) {
+        const isClickInsideSidebar = sidebar.contains(event.target);
+        const isClickOnToggleBtn = menuToggleBtn.contains(event.target);
+        if (!isClickInsideSidebar && !isClickOnToggleBtn) {
+            sidebar.classList.remove('show-mobile');
+        }
+    }
+});
+
 
 // Initial UI update for general chat on page load
 updateActiveChatUI();

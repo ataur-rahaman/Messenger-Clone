@@ -19,7 +19,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* Ensure full viewport height */
+    min-height: 100vh;
     color: var(--text-color-dark);
 }
 
@@ -35,7 +35,7 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
     width: 300px;
-    max-width: 90%; /* Responsive adjustment */
+    max-width: 90%;
 }
 
 #auth-container h2 {
@@ -79,7 +79,7 @@ body {
 }
 
 #google-login-btn {
-    background-color: #DB4437; /* Google red */
+    background-color: #DB4437;
     color: white;
     padding: 10px 15px;
     border: none;
@@ -87,8 +87,8 @@ body {
     cursor: pointer;
     font-size: 16px;
     margin: 5px;
-    width: calc(100% - 10px); /* Adjust to match other buttons */
-    display: flex; /* For icon and text alignment */
+    width: calc(100% - 10px);
+    display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s ease-in-out;
@@ -99,15 +99,15 @@ body {
 }
 
 #google-login-btn i {
-    margin-right: 8px; /* Space between icon and text */
+    margin-right: 8px;
 }
 
 /* Main App Container */
 #app-container {
     display: flex;
-    width: 95%; /* Adjust as needed for larger screens */
-    max-width: 1200px; /* Max width for larger screens */
-    height: 90vh; /* Occupy most of the viewport height */
+    width: 95%;
+    max-width: 1200px;
+    height: 90vh;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -116,13 +116,29 @@ body {
 
 /* Sidebar */
 #sidebar {
-    width: 300px; /* Fixed width for sidebar on large screens */
+    width: 300px;
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     padding: 15px;
-    background-color: #f8f9fa; /* Lighter background for sidebar */
+    background-color: #f8f9fa;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0);
 }
+
+/* New: Class for hidden sidebar */
+#sidebar.hidden-mobile { /* This class is not directly used by JS, but kept for clarity */
+    transform: translateX(-100%);
+    position: absolute;
+    height: 100%;
+    z-index: 10;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+#sidebar.show-mobile { /* Class added by JS to show sidebar */
+    transform: translateX(0) !important; /* Ensure it appears */
+}
+
 
 #user-info {
     display: flex;
@@ -163,7 +179,7 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    flex-grow: 1; /* Allows list to take available space */
+    flex-grow: 1;
 }
 
 #conversation-list li {
@@ -186,13 +202,14 @@ body {
 
 /* Main Chat Area */
 #main-chat-area {
-    flex-grow: 1; /* Takes remaining space */
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
+    transition: margin-left 0.3s ease-in-out;
 }
 
 #chat-header {
-    display: flex; /* Added for alignment of title and delete button */
+    display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px;
@@ -205,9 +222,25 @@ body {
     color: var(--text-color-dark);
 }
 
+/* Hamburger Menu Button - Hidden by default for desktop */
+#menu-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: var(--messenger-blue);
+    cursor: pointer;
+    padding: 5px;
+    display: none; /* Hidden on large screens by default */
+}
+
+#menu-toggle-btn:hover {
+    color: #006ee6;
+}
+
+
 /* Delete Chat Button Style */
 #delete-chat-btn {
-    background-color: #dc3545; /* Red color for danger */
+    background-color: #dc3545;
     color: white;
     padding: 8px 12px;
     border: none;
@@ -217,7 +250,7 @@ body {
     transition: background-color 0.2s ease-in-out;
     display: flex;
     align-items: center;
-    gap: 5px; /* Space between icon and text */
+    gap: 5px;
 }
 
 #delete-chat-btn:hover {
@@ -226,18 +259,18 @@ body {
 
 
 #messages-container {
-    flex-grow: 1; /* Allows messages to fill space and scroll */
+    flex-grow: 1;
     padding: 15px;
     overflow-y: auto;
     display: flex;
-    flex-direction: column; /* Messages stack vertically */
+    flex-direction: column;
 }
 
 /* Message Bubbles */
 .message {
     display: flex;
     margin-bottom: 10px;
-    align-items: flex-end; /* Align sender info with message */
+    align-items: flex-end;
 }
 
 .message.sent {
@@ -251,64 +284,64 @@ body {
 .message-content {
     max-width: 70%;
     padding: 10px 15px;
-    border-radius: 18px; /* Rounded corners like Messenger */
+    border-radius: 18px;
     line-height: 1.4;
-    word-wrap: break-word; /* Prevents long words from breaking layout */
-    position: relative; /* Added for delete button positioning */
+    word-wrap: break-word;
+    position: relative;
 }
 
 .message.received .message-content {
     background-color: var(--message-bubble-bg);
     color: var(--text-color-dark);
-    border-bottom-left-radius: 2px; /* Slight adjustment for bubble shape */
+    border-bottom-left-radius: 2px;
 }
 
 .message.sent .message-content {
     background-color: var(--messenger-blue);
     color: var(--text-color-light);
     border-bottom-right-radius: 2px;
-    display: flex; /* For delete button alignment */
-    justify-content: space-between; /* For delete button alignment */
-    align-items: center; /* For delete button alignment */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* Delete Message Button Style */
 .delete-message-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7); /* Lighter color for visibility on blue */
-    font-size: 0.8em; /* Smaller icon */
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8em;
     cursor: pointer;
-    margin-left: 10px; /* Space from text */
-    opacity: 0; /* Hidden by default */
+    margin-left: 10px;
+    opacity: 0;
     transition: opacity 0.2s ease-in-out, color 0.2s ease-in-out;
-    float: right; /* Align to the right of the message content */
+    float: right;
     padding: 0;
 }
 
 .message.sent .delete-message-btn {
-    color: rgba(255, 255, 255, 0.7); /* White for sent messages */
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .message.received .delete-message-btn {
-    color: var(--messenger-dark-grey); /* Dark grey for received messages */
+    color: var(--messenger-dark-grey);
 }
 
 .message-content:hover .delete-message-btn {
-    opacity: 1; /* Show on hover */
+    opacity: 1;
 }
 
 .delete-message-btn:hover {
-    color: #f44336; /* Red on hover */
+    color: #f44336;
 }
 
 .message-info {
     font-size: 0.75em;
     color: var(--messenger-dark-grey);
     margin-top: 2px;
-    white-space: nowrap; /* Keep time on one line */
-    display: block; /* Ensure sender info is on its own line */
-    text-align: right; /* Align to the right for sent, left for received */
+    white-space: nowrap;
+    display: block;
+    text-align: right;
 }
 
 .message.received .message-info {
@@ -333,7 +366,7 @@ body {
     flex-grow: 1;
     padding: 10px 15px;
     border: 1px solid var(--border-color);
-    border-radius: 20px; /* Rounded input field */
+    border-radius: 20px;
     font-size: 16px;
     margin-right: 10px;
 }
@@ -347,10 +380,10 @@ body {
 #send-button {
     background-color: var(--messenger-blue);
     color: var(--text-color-light);
-    width: 40px; /* Make button round/square for icon */
+    width: 40px;
     height: 40px;
     border: none;
-    border-radius: 50%; /* Circular button */
+    border-radius: 50%;
     cursor: pointer;
     display: flex;
     justify-content: center;
@@ -466,13 +499,13 @@ body {
 /* For screens up to 1024px (e.g., smaller laptops, large tablets) */
 @media (max-width: 1024px) {
     #app-container {
-        width: 98%; /* Use more of the screen width */
-        max-width: none; /* Remove max-width constraint */
-        height: 95vh; /* Increase height slightly */
+        width: 98%;
+        max-width: none;
+        height: 95vh;
     }
 
     #sidebar {
-        width: 250px; /* Slightly narrower sidebar */
+        width: 250px;
         padding: 10px;
     }
 
@@ -511,7 +544,6 @@ body {
 /* For screens up to 768px (e.g., tablets in portrait, larger phones) */
 @media (max-width: 768px) {
     body {
-        /* Adjust alignment to fill full height on smaller screens */
         align-items: stretch;
         justify-content: flex-start;
     }
@@ -522,19 +554,34 @@ body {
     }
 
     #app-container {
-        width: 100%; /* Take full width on smaller screens */
-        height: 100vh; /* Take full viewport height */
-        border-radius: 0; /* Remove border-radius for full screen */
-        box-shadow: none; /* Remove shadow */
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     #sidebar {
-        width: 180px; /* Even narrower sidebar */
-        padding: 8px;
+        width: 250px;
+        padding: 15px;
+        position: absolute;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+        transform: translateX(-100%); /* Start hidden off-screen */
+    }
+
+    #sidebar.show-mobile {
+        transform: translateX(0) !important; /* Ensure it appears */
+    }
+
+    #main-chat-area {
+        width: 100%;
     }
 
     #user-info {
-        flex-direction: column; /* Stack user info elements */
+        flex-direction: column;
         align-items: flex-start;
         padding-bottom: 10px;
         margin-bottom: 10px;
@@ -546,7 +593,7 @@ body {
 
     #logout-btn {
         margin-top: 5px;
-        width: 100%; /* Full width within user-info */
+        width: 100%;
         text-align: center;
     }
 
@@ -567,27 +614,32 @@ body {
 
     #chat-header {
         padding: 10px;
-        flex-wrap: wrap; /* Allow elements to wrap if space is tight */
-        justify-content: center;
-        text-align: center;
+        flex-direction: row;
+        justify-content: space-between;
     }
     #chat-header h3 {
-        width: 100%; /* Make header text take full width */
-        margin-bottom: 5px;
-        font-size: 1.2em;
+        flex-grow: 1;
+        text-align: center;
+        margin: 0 10px;
     }
     #delete-chat-btn {
         padding: 6px 10px;
         font-size: 0.8em;
-        margin-top: 5px; /* Space from header text */
     }
+
+    /* Show hamburger menu on mobile */
+    #menu-toggle-btn {
+        display: block !important; /* This should now correctly force it to display */
+        order: -1;
+    }
+
 
     #messages-container {
         padding: 8px;
     }
 
     .message-content {
-        max-width: 80%; /* Allow messages to take more width */
+        max-width: 80%;
         padding: 8px 12px;
         font-size: 0.95em;
     }
@@ -623,32 +675,16 @@ body {
         padding: 15px;
     }
 
-    #app-container {
-        /* On small mobile, hide sidebar and make chat area full width */
-        flex-direction: row; /* Keep it as row, but sidebar will be hidden */
-    }
-
     #sidebar {
-        display: none; /* Hide sidebar on very small screens */
-    }
-
-    #main-chat-area {
-        width: 100%; /* Main chat takes full width */
-    }
-
-    #chat-header {
-        padding: 8px;
-        flex-direction: column; /* Stack header elements */
-        align-items: center;
+        width: 80%;
     }
 
     #chat-header h3 {
         font-size: 1.1em;
-        margin-bottom: 8px;
     }
 
     #delete-chat-btn {
-        font-size: 0.75em;
+        font-size: 0.7em;
         padding: 5px 8px;
     }
 
@@ -657,7 +693,7 @@ body {
     }
 
     .message-content {
-        max-width: 90%; /* Messages take even more width */
+        max-width: 90%;
         padding: 7px 10px;
         font-size: 0.9em;
     }

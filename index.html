@@ -26,11 +26,15 @@
 
     <div id="app-container" class="hidden">
         <div id="sidebar">
-            <div id="user-info">
-                <img id="user-avatar" src="https://via.placeholder.com/40" alt="User Avatar">
-                <span id="current-user-email"></span>
-                <button id="logout-btn">Logout</button>
+            <div class="sidebar-header">
+                <button id="back-to-chat-btn" class="hidden"><i class="fas fa-arrow-left"></i></button>
+                <div id="user-info">
+                    <img id="user-avatar" src="https://via.placeholder.com/40" alt="User Avatar">
+                    <span id="current-user-email"></span>
+                    <button id="logout-btn">Logout</button>
+                </div>
             </div>
+            
             <h3>Conversations</h3>
             <ul id="conversation-list">
                 <li class="active-chat" data-chat-id="general" data-chat-name="General Chat">General Chat</li>

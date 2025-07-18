@@ -135,14 +135,38 @@ body {
     transform: translateX(0) !important;
 }
 
+/* New: Sidebar Header for Back button and User Info */
+.sidebar-header {
+    display: flex;
+    flex-direction: column; /* Stack back button and user info */
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 15px;
+    position: relative; /* For absolute positioning of back button if needed */
+}
+
+/* New: Back button for sidebar */
+#back-to-chat-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: var(--messenger-blue);
+    cursor: pointer;
+    padding: 5px;
+    align-self: flex-start; /* Align to the start of the flex container */
+    margin-bottom: 10px; /* Space between button and user info */
+    display: none; /* Hidden by default, shown in media queries */
+}
+
+#back-to-chat-btn:hover {
+    color: #006ee6;
+}
 
 #user-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 15px;
+    /* Removed padding-bottom, border-bottom, margin-bottom from here */
 }
 
 #user-info span {
@@ -311,16 +335,15 @@ body {
 .delete-message-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7); /* Default color for sent, will be overridden for received */
-    font-size: 0.8em; /* Default smaller size */
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8em;
     cursor: pointer;
     margin-left: 10px;
-    opacity: 0; /* Hidden by default */
+    opacity: 0;
     transition: opacity 0.2s ease-in-out, font-size 0.2s ease-in-out, color 0.2s ease-in-out;
     float: right;
     padding: 0;
-    /* For better tap target on mobile, ensure it takes up space even when hidden */
-    pointer-events: none; /* Prevent clicks when hidden */
+    pointer-events: none;
 }
 
 .message.sent .delete-message-btn {
@@ -331,21 +354,19 @@ body {
     color: var(--messenger-dark-grey);
 }
 
-/* Desktop hover effect remains */
 .message-content:hover .delete-message-btn {
     opacity: 1;
-    pointer-events: auto; /* Allow clicks on hover */
+    pointer-events: auto;
 }
 
-/* NEW: Class to make delete icon visible and larger on tap for mobile */
+/* Class to make delete icon visible and larger on tap for mobile */
 .delete-message-btn.visible-on-tap {
-    opacity: 1 !important; /* Force visible */
-    font-size: 1.5em !important; /* Larger size for tap target */
-    pointer-events: auto !important; /* Allow clicks */
-    /* Adjust margin for better positioning with larger size if needed */
+    opacity: 1 !important;
+    font-size: 1.5em !important;
+    pointer-events: auto !important;
     margin-top: 0;
-    margin-left: 15px; /* Give more space */
-    padding: 5px; /* Add padding for easier tapping */
+    margin-left: 15px;
+    padding: 5px;
 }
 
 .delete-message-btn:hover {
@@ -602,21 +623,36 @@ body {
         width: 100%;
     }
 
+    /* Updated user-info layout for mobile sidebar header */
+    .sidebar-header {
+        flex-direction: row; /* Make user info and back button align horizontally */
+        justify-content: flex-start; /* Align content to the left */
+        align-items: center; /* Vertically align items */
+        padding-bottom: 10px; /* Adjust padding */
+        margin-bottom: 10px; /* Adjust margin */
+    }
+
+    #back-to-chat-btn {
+        display: block !important; /* Show back button on mobile */
+        margin-bottom: 0; /* Remove bottom margin */
+        margin-right: 15px; /* Space between back button and user info */
+    }
+
     #user-info {
-        flex-direction: column;
-        align-items: flex-start;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
+        flex-grow: 1; /* Allow user info to take remaining space */
+        justify-content: space-between; /* Space out avatar, email, logout */
+        align-items: center;
     }
 
     #user-avatar {
-        margin-bottom: 5px;
+        margin-bottom: 0; /* Remove bottom margin */
     }
 
     #logout-btn {
-        margin-top: 5px;
-        width: 100%;
-        text-align: center;
+        margin-top: 0;
+        width: auto; /* Allow button to size naturally */
+        padding: 5px 8px; /* Smaller padding */
+        font-size: 0.8em; /* Smaller font size */
     }
 
     #sidebar h3 {

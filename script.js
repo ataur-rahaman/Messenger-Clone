@@ -41,6 +41,7 @@ const sendButton = document.getElementById('send-button');
 
 const deleteChatBtn = document.getElementById('delete-chat-btn');
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
+const backToChatBtn = document.getElementById('back-to-chat-btn'); // New: Back to chat button
 
 const sidebar = document.getElementById('sidebar');
 
@@ -53,9 +54,9 @@ let typingListener = null;
 let typingTimeout;
 const TYPING_INDICATOR_TIMEOUT = 1500;
 
-let currentlyVisibleDeleteBtn = null; // New: To keep track of the currently visible delete button
+let currentlyVisibleDeleteBtn = null;
 
-// NEW: Function to set CSS variable for accurate VH on mobile
+// Function to set CSS variable for accurate VH on mobile
 function setVhProperty() {
     let vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -100,7 +101,7 @@ function updateActiveChatUI() {
     }
 
     if (window.innerWidth <= 768) {
-        sidebar.classList.remove('show-mobile');
+        sidebar.classList.remove('show-mobile'); // Hide sidebar on chat switch
     }
 }
 
@@ -467,20 +468,16 @@ function displayMessage(message) {
     if (isSentByCurrentUser) {
         const deleteBtn = messageElement.querySelector('.delete-message-btn');
         if (deleteBtn) {
-            // New: Add click listener to the entire message element to toggle delete button visibility
             messageElement.addEventListener('click', (event) => {
-                // Prevent clicking the delete button from immediately hiding itself
                 if (event.target === deleteBtn || deleteBtn.contains(event.target)) {
                     return;
                 }
 
-                // Hide any previously visible delete button
                 if (currentlyVisibleDeleteBtn && currentlyVisibleDeleteBtn !== deleteBtn) {
                     currentlyVisibleDeleteBtn.classList.remove('visible-on-tap');
                 }
 
-                // Toggle visibility of the current message's delete button only on mobile
-                if (window.innerWidth <= 768) { // Assuming 768px is your mobile breakpoint
+                if (window.innerWidth <= 768) {
                     deleteBtn.classList.toggle('visible-on-tap');
                     if (deleteBtn.classList.contains('visible-on-tap')) {
                         currentlyVisibleDeleteBtn = deleteBtn;
@@ -490,7 +487,6 @@ function displayMessage(message) {
                 }
             });
 
-            // Original: Add click listener to the delete button itself for deletion
             deleteBtn.addEventListener('click', () => {
                 const messageIdToDelete = deleteBtn.dataset.messageId;
                 if (confirm('Are you sure you want to delete this message?')) {
@@ -516,7 +512,6 @@ function deleteMessage(chatId, messageId) {
             if (messageElement) {
                 messageElement.closest('.message').remove();
             }
-            // Reset currently visible delete button if the deleted message was it
             if (currentlyVisibleDeleteBtn && currentlyVisibleDeleteBtn.dataset.messageId === messageId) {
                 currentlyVisibleDeleteBtn = null;
             }
@@ -567,13 +562,20 @@ menuToggleBtn.addEventListener('click', () => {
     sidebar.classList.toggle('show-mobile');
 });
 
-// Hide sidebar or delete icon if user clicks outside of them
+// New: Event listener for the back button in the sidebar
+backToChatBtn.addEventListener('click', () => {
+    sidebar.classList.remove('show-mobile'); // Hide sidebar
+});
+
+
 document.addEventListener('click', (event) => {
     // Logic for hiding sidebar
     if (window.innerWidth <= 768 && sidebar.classList.contains('show-mobile')) {
         const isClickInsideSidebar = sidebar.contains(event.target);
         const isClickOnToggleBtn = menuToggleBtn.contains(event.target);
-        if (!isClickInsideSidebar && !isClickOnToggleBtn) {
+        const isClickOnBackButton = backToChatBtn.contains(event.target); // New check for back button
+        
+        if (!isClickInsideSidebar && !isClickOnToggleBtn && !isClickOnBackButton) {
             sidebar.classList.remove('show-mobile');
         }
     }
@@ -583,7 +585,6 @@ document.addEventListener('click', (event) => {
         const isClickInsideMessage = event.target.closest('.message') !== null;
         const isClickOnDeleteButton = currentlyVisibleDeleteBtn.contains(event.target);
 
-        // If the click is not on the currently visible delete button, and it's not on a message (or it's on a different message)
         if (!isClickOnDeleteButton && (!isClickInsideMessage || (isClickInsideMessage && !event.target.closest('.message').querySelector('.delete-message-btn.visible-on-tap')))) {
             currentlyVisibleDeleteBtn.classList.remove('visible-on-tap');
             currentlyVisibleDeleteBtn = null;

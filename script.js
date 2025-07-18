@@ -14,7 +14,6 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const database = firebase.database();
-// REMOVED: const storage = firebase.storage();
 
 // DOM Elements
 const authContainer = document.getElementById('auth-container');
@@ -41,9 +40,8 @@ const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 
 const deleteChatBtn = document.getElementById('delete-chat-btn');
-const menuToggleBtn = document.getElementById('menu-toggle-btn'); // New: Hamburger Menu Button
+const menuToggleBtn = document.getElementById('menu-toggle-btn');
 
-// New: Reference to the sidebar
 const sidebar = document.getElementById('sidebar');
 
 let currentUser = null;
@@ -54,6 +52,19 @@ let typingListener = null;
 
 let typingTimeout;
 const TYPING_INDICATOR_TIMEOUT = 1500;
+
+// NEW: Function to set CSS variable for accurate VH on mobile
+function setVhProperty() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+// Set on initial load
+setVhProperty();
+// Re-set on resize (especially important for mobile when address bar hides/shows)
+window.addEventListener('resize', setVhProperty);
+window.addEventListener('orientationchange', setVhProperty);
+
 
 // --- Helper Functions ---
 function generateChatId(uid1, uid2) {
@@ -80,15 +91,13 @@ function updateActiveChatUI() {
     }
     currentChatNameHeader.textContent = currentChatName;
 
-    // Control visibility of delete chat button
     if (currentChatId === 'general') {
         deleteChatBtn.classList.add('hidden');
     } else {
         deleteChatBtn.classList.remove('hidden');
     }
 
-    // New: Hide sidebar after switching chat on mobile
-    if (window.innerWidth <= 768) { // Check for mobile viewport
+    if (window.innerWidth <= 768) {
         sidebar.classList.remove('show-mobile');
     }
 }
@@ -524,12 +533,10 @@ function deleteChat(chatId) {
         });
 }
 
-// New: Event listener for the hamburger menu button
 menuToggleBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('show-mobile'); // Toggle the class to show/hide
+    sidebar.classList.toggle('show-mobile');
 });
 
-// Optional: Hide sidebar if user clicks outside of it while it's open
 document.addEventListener('click', (event) => {
     if (window.innerWidth <= 768 && sidebar.classList.contains('show-mobile')) {
         const isClickInsideSidebar = sidebar.contains(event.target);
@@ -539,7 +546,6 @@ document.addEventListener('click', (event) => {
         }
     }
 });
-
 
 // Initial UI update for general chat on page load
 updateActiveChatUI();

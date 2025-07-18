@@ -21,6 +21,9 @@ body {
     align-items: center;
     min-height: 100vh;
     color: var(--text-color-dark);
+    /* New: Important for mobile fixed layouts */
+    height: 100vh;
+    overflow: hidden; /* Prevent body scroll */
 }
 
 .hidden {
@@ -107,11 +110,15 @@ body {
     display: flex;
     width: 95%;
     max-width: 1200px;
-    height: 90vh;
+    height: 90vh; /* Original height */
+    /* New: For reliable full height on mobile */
+    height: calc(var(--vh, 1vh) * 90); /* Use custom property for more reliable vh */
+    min-height: 500px; /* Ensure a minimum height even if vh fails */
+
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    overflow: hidden; /* Important for flex children */
 }
 
 /* Sidebar */
@@ -126,17 +133,8 @@ body {
     transform: translateX(0);
 }
 
-/* New: Class for hidden sidebar */
-#sidebar.hidden-mobile { /* This class is not directly used by JS, but kept for clarity */
-    transform: translateX(-100%);
-    position: absolute;
-    height: 100%;
-    z-index: 10;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-}
-
-#sidebar.show-mobile { /* Class added by JS to show sidebar */
-    transform: translateX(0) !important; /* Ensure it appears */
+#sidebar.show-mobile {
+    transform: translateX(0) !important;
 }
 
 
@@ -204,7 +202,7 @@ body {
 #main-chat-area {
     flex-grow: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* This is key for vertical layout */
     transition: margin-left 0.3s ease-in-out;
 }
 
@@ -215,6 +213,8 @@ body {
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
     background-color: #f8f9fa;
+    /* New: Ensure header takes fixed height and doesn't scroll */
+    flex-shrink: 0;
 }
 
 #chat-header h3 {
@@ -230,7 +230,7 @@ body {
     color: var(--messenger-blue);
     cursor: pointer;
     padding: 5px;
-    display: none; /* Hidden on large screens by default */
+    display: none;
 }
 
 #menu-toggle-btn:hover {
@@ -259,9 +259,9 @@ body {
 
 
 #messages-container {
-    flex-grow: 1;
+    flex-grow: 1; /* Allow messages to fill available space */
     padding: 15px;
-    overflow-y: auto;
+    overflow-y: auto; /* This makes only the messages scrollable */
     display: flex;
     flex-direction: column;
 }
@@ -360,6 +360,8 @@ body {
     border-top: 1px solid var(--border-color);
     background-color: #f8f9fa;
     align-items: center;
+    /* New: Ensure input area takes fixed height and doesn't scroll */
+    flex-shrink: 0;
 }
 
 #message-input {
@@ -501,7 +503,8 @@ body {
     #app-container {
         width: 98%;
         max-width: none;
-        height: 95vh;
+        /* Adjusted height with calc to account for mobile quirks */
+        height: calc(var(--vh, 1vh) * 95);
     }
 
     #sidebar {
@@ -546,6 +549,8 @@ body {
     body {
         align-items: stretch;
         justify-content: flex-start;
+        height: 100vh; /* Ensure 100vh for mobile devices */
+        overflow: hidden; /* Prevent scrolling of the whole body */
     }
 
     #auth-container {
@@ -555,7 +560,9 @@ body {
 
     #app-container {
         width: 100%;
-        height: 100vh;
+        /* New: Calculate height from actual window height to account for mobile browser UI */
+        height: 100vh; /* Will be adjusted by JS for proper visual viewport height */
+        height: calc(var(--vh, 1vh) * 100);
         border-radius: 0;
         box-shadow: none;
     }
@@ -565,15 +572,16 @@ body {
         padding: 15px;
         position: absolute;
         height: 100%;
+        height: calc(var(--vh, 1vh) * 100); /* Match app-container height */
         top: 0;
         left: 0;
         z-index: 10;
         box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-        transform: translateX(-100%); /* Start hidden off-screen */
+        transform: translateX(-100%);
     }
 
     #sidebar.show-mobile {
-        transform: translateX(0) !important; /* Ensure it appears */
+        transform: translateX(0) !important;
     }
 
     #main-chat-area {
@@ -627,9 +635,8 @@ body {
         font-size: 0.8em;
     }
 
-    /* Show hamburger menu on mobile */
     #menu-toggle-btn {
-        display: block !important; /* This should now correctly force it to display */
+        display: block !important;
         order: -1;
     }
 
@@ -676,7 +683,7 @@ body {
     }
 
     #sidebar {
-        width: 60%;
+        width: 80%;
     }
 
     #chat-header h3 {

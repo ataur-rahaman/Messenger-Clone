@@ -286,11 +286,10 @@ body {
     word-wrap: break-word;
     position: relative;
 
-    /* NEW: Properties for better text wrapping and overflow handling */
-    word-break: break-word; /* Breaks long words that don't fit */
-    overflow-wrap: break-word; /* Ensures text wraps within its box */
-    white-space: pre-wrap; /* Preserves whitespace but allows wrapping */
-    min-width: 0; /* Important for flex items to shrink correctly */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    min-width: 0;
 }
 
 .message.received .message-content {
@@ -308,18 +307,20 @@ body {
     align-items: center;
 }
 
-/* Delete Message Button Style */
+/* Delete Message Button Style - Hidden by default */
 .delete-message-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.7); /* Default color for sent, will be overridden for received */
+    font-size: 0.8em; /* Default smaller size */
     cursor: pointer;
     margin-left: 10px;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out, color 0.2s ease-in-out;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease-in-out, font-size 0.2s ease-in-out, color 0.2s ease-in-out;
     float: right;
     padding: 0;
+    /* For better tap target on mobile, ensure it takes up space even when hidden */
+    pointer-events: none; /* Prevent clicks when hidden */
 }
 
 .message.sent .delete-message-btn {
@@ -330,8 +331,21 @@ body {
     color: var(--messenger-dark-grey);
 }
 
+/* Desktop hover effect remains */
 .message-content:hover .delete-message-btn {
     opacity: 1;
+    pointer-events: auto; /* Allow clicks on hover */
+}
+
+/* NEW: Class to make delete icon visible and larger on tap for mobile */
+.delete-message-btn.visible-on-tap {
+    opacity: 1 !important; /* Force visible */
+    font-size: 1.5em !important; /* Larger size for tap target */
+    pointer-events: auto !important; /* Allow clicks */
+    /* Adjust margin for better positioning with larger size if needed */
+    margin-top: 0;
+    margin-left: 15px; /* Give more space */
+    padding: 5px; /* Add padding for easier tapping */
 }
 
 .delete-message-btn:hover {

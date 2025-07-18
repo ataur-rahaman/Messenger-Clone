@@ -53,6 +53,8 @@ let typingListener = null;
 let typingTimeout;
 const TYPING_INDICATOR_TIMEOUT = 1500;
 
+let currentlyVisibleDeleteBtn = null; // New: To keep track of the currently visible delete button
+
 // NEW: Function to set CSS variable for accurate VH on mobile
 function setVhProperty() {
     let vh = window.innerHeight * 0.01;
@@ -463,10 +465,34 @@ function displayMessage(message) {
     messagesContainer.appendChild(messageElement);
 
     if (isSentByCurrentUser) {
-        const btn = messageElement.querySelector('.delete-message-btn');
-        if (btn) {
-            btn.addEventListener('click', () => {
-                const messageIdToDelete = btn.dataset.messageId;
+        const deleteBtn = messageElement.querySelector('.delete-message-btn');
+        if (deleteBtn) {
+            // New: Add click listener to the entire message element to toggle delete button visibility
+            messageElement.addEventListener('click', (event) => {
+                // Prevent clicking the delete button from immediately hiding itself
+                if (event.target === deleteBtn || deleteBtn.contains(event.target)) {
+                    return;
+                }
+
+                // Hide any previously visible delete button
+                if (currentlyVisibleDeleteBtn && currentlyVisibleDeleteBtn !== deleteBtn) {
+                    currentlyVisibleDeleteBtn.classList.remove('visible-on-tap');
+                }
+
+                // Toggle visibility of the current message's delete button only on mobile
+                if (window.innerWidth <= 768) { // Assuming 768px is your mobile breakpoint
+                    deleteBtn.classList.toggle('visible-on-tap');
+                    if (deleteBtn.classList.contains('visible-on-tap')) {
+                        currentlyVisibleDeleteBtn = deleteBtn;
+                    } else {
+                        currentlyVisibleDeleteBtn = null;
+                    }
+                }
+            });
+
+            // Original: Add click listener to the delete button itself for deletion
+            deleteBtn.addEventListener('click', () => {
+                const messageIdToDelete = deleteBtn.dataset.messageId;
                 if (confirm('Are you sure you want to delete this message?')) {
                     deleteMessage(currentChatId, messageIdToDelete);
                 }
@@ -489,6 +515,10 @@ function deleteMessage(chatId, messageId) {
             const messageElement = document.querySelector(`.message .delete-message-btn[data-message-id="${messageId}"]`);
             if (messageElement) {
                 messageElement.closest('.message').remove();
+            }
+            // Reset currently visible delete button if the deleted message was it
+            if (currentlyVisibleDeleteBtn && currentlyVisibleDeleteBtn.dataset.messageId === messageId) {
+                currentlyVisibleDeleteBtn = null;
             }
         })
         .catch((error) => {
@@ -537,12 +567,26 @@ menuToggleBtn.addEventListener('click', () => {
     sidebar.classList.toggle('show-mobile');
 });
 
+// Hide sidebar or delete icon if user clicks outside of them
 document.addEventListener('click', (event) => {
+    // Logic for hiding sidebar
     if (window.innerWidth <= 768 && sidebar.classList.contains('show-mobile')) {
         const isClickInsideSidebar = sidebar.contains(event.target);
         const isClickOnToggleBtn = menuToggleBtn.contains(event.target);
         if (!isClickInsideSidebar && !isClickOnToggleBtn) {
             sidebar.classList.remove('show-mobile');
+        }
+    }
+
+    // Logic for hiding delete icon when tapping elsewhere
+    if (window.innerWidth <= 768 && currentlyVisibleDeleteBtn) {
+        const isClickInsideMessage = event.target.closest('.message') !== null;
+        const isClickOnDeleteButton = currentlyVisibleDeleteBtn.contains(event.target);
+
+        // If the click is not on the currently visible delete button, and it's not on a message (or it's on a different message)
+        if (!isClickOnDeleteButton && (!isClickInsideMessage || (isClickInsideMessage && !event.target.closest('.message').querySelector('.delete-message-btn.visible-on-tap')))) {
+            currentlyVisibleDeleteBtn.classList.remove('visible-on-tap');
+            currentlyVisibleDeleteBtn = null;
         }
     }
 });

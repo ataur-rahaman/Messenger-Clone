@@ -191,16 +191,39 @@ body {
 }
 
 #chat-header {
+    display: flex; /* Added for alignment of title and delete button */
+    justify-content: space-between; /* To push button to the right */
+    align-items: center;
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
     background-color: #f8f9fa;
-    text-align: center;
+    text-align: center; /* This might be overridden by flex but keep for general H3 centering */
 }
 
 #chat-header h3 {
     margin: 0;
     color: var(--text-color-dark);
 }
+
+/* New: Delete Chat Button Style */
+#delete-chat-btn {
+    background-color: #dc3545; /* Red color for danger */
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease-in-out;
+    display: flex; /* For icon and text alignment */
+    align-items: center;
+    gap: 5px; /* Space between icon and text */
+}
+
+#delete-chat-btn:hover {
+    background-color: #c82333;
+}
+
 
 #messages-container {
     flex-grow: 1; /* Allows messages to fill space and scroll */
@@ -231,6 +254,7 @@ body {
     border-radius: 18px; /* Rounded corners like Messenger */
     line-height: 1.4;
     word-wrap: break-word; /* Prevents long words from breaking layout */
+    position: relative; /* Added for delete button positioning */
 }
 
 .message.received .message-content {
@@ -243,6 +267,39 @@ body {
     background-color: var(--messenger-blue);
     color: var(--text-color-light);
     border-bottom-right-radius: 2px;
+    display: flex; /* For delete button alignment */
+    justify-content: space-between; /* For delete button alignment */
+    align-items: center; /* For delete button alignment */
+}
+
+/* New: Delete Message Button Style */
+.delete-message-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7); /* Lighter color for visibility on blue */
+    font-size: 0.8em; /* Smaller icon */
+    cursor: pointer;
+    margin-left: 10px; /* Space from text */
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease-in-out, color 0.2s ease-in-out;
+    float: right; /* Align to the right of the message content */
+    padding: 0;
+}
+
+.message.sent .delete-message-btn {
+    color: rgba(255, 255, 255, 0.7); /* White for sent messages */
+}
+
+.message.received .delete-message-btn {
+    color: var(--messenger-dark-grey); /* Dark grey for received messages */
+}
+
+.message-content:hover .delete-message-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.delete-message-btn:hover {
+    color: #f44336; /* Red on hover */
 }
 
 .message-info {
@@ -250,14 +307,17 @@ body {
     color: var(--messenger-dark-grey);
     margin-top: 2px;
     white-space: nowrap; /* Keep time on one line */
-}
-
-.message.sent .message-info {
-    margin-left: 8px; /* Space between bubble and time */
+    display: block; /* Ensure sender info is on its own line */
+    text-align: right; /* Align to the right for sent, left for received */
 }
 
 .message.received .message-info {
-    margin-right: 8px;
+    text-align: left;
+}
+/* For better display of sender's name for received messages */
+.message.received .message-info span {
+    font-weight: bold;
+    color: var(--text-color-dark);
 }
 
 /* Message Input Area */
@@ -424,4 +484,3 @@ body {
     margin-left: 8px;
     order: 2; /* Put avatar on the right for sent messages */
 }
-

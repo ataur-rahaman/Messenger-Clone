@@ -9,7 +9,6 @@
     --text-color-dark: #1c1e21;
     --text-color-light: #fff;
     --border-color: #ddd;
-    --received-message-highlight-bg: #dcf8c6; /* New: Slightly different color for received messages */
 }
 
 body {
@@ -318,10 +317,9 @@ body {
 }
 
 .message.received .message-content {
-    background-color: var(--received-message-highlight-bg); /* Changed background color for received messages */
+    background-color: var(--message-bubble-bg);
     color: var(--text-color-dark);
     border-bottom-left-radius: 2px;
-    font-weight: bold; /* Added bold text for received messages */
 }
 
 .message.sent .message-content {
@@ -493,8 +491,7 @@ body {
 }
 
 #users-list li.active-chat {
-   background-color: #a8d8ff; /* Updated: Slightly different blue background */
-   font-weight: bold; /* Added: Bold text for active user in friends list */
+   background-color: #e0efff;
 }
 
 #user-avatar {

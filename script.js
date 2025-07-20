@@ -1,3 +1,13 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyBWNIsFW0QKknbDHqhfWG7GU_GYKV-wAXM",
+  authDomain: "messenger-clone-9421f.firebaseapp.com",
+  databaseURL: "https://messenger-clone-9421f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "messenger-clone-9421f",
+  storageBucket: "messenger-clone-9421f.firebasestorage.app",
+  messagingSenderId: "296040648748",
+  appId: "1:296040648748:web:589afe85ec371386fd0189"
+};
+
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 

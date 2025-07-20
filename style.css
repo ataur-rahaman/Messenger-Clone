@@ -493,7 +493,8 @@ body {
 }
 
 #users-list li.active-chat {
-   background-color: #e0efff;
+   background-color: #a8d8ff; /* Updated: Slightly different blue background */
+   font-weight: bold; /* Added: Bold text for active user in friends list */
 }
 
 #user-avatar {

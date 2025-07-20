@@ -5,7 +5,7 @@ const firebaseConfig = {
   projectId: "messenger-clone-9421f",
   storageBucket: "messenger-clone-9421f.firebasestorage.app",
   messagingSenderId: "296040648748",
-  appId: "1:296040648748:web:589afe85ec3713866fd0189"
+  appId: "1:296040648748:web:589afe85ec3713866fd0189" // Updated app ID based on the previous response
 };
 
 // Initialize Firebase
@@ -61,7 +61,7 @@ const TYPING_INDICATOR_TIMEOUT = 1500;
 
 // To track currently visible action menus (for mobile tap logic)
 let currentlyVisibleMessageActions = null;
-let currentlyVisibleEmojiPickerForMessage = null;
+let currentlyVisibleEmojiPickerForMessage = null; // To track visible emoji picker (independent of actions visibility for desktop)
 
 
 // Function to set CSS variable for accurate VH on mobile
@@ -373,6 +373,7 @@ function switchChat(newChatId, newChatName) {
         }
     });
 
+
     const typingRef = database.ref('typingIndicators/' + currentChatId);
     typingListener = typingRef.on('value', (snapshot) => {
         const typingUsers = snapshot.val();
@@ -547,7 +548,7 @@ function displayMessage(message) {
     const deleteBtn = messageElement.querySelector('.delete-message-btn');
 
 
-    // Desktop hover behavior
+    // Desktop hover behavior: Show/hide message actions
     messageElement.addEventListener('mouseenter', () => {
         if (window.innerWidth > 768) {
             messageActions.classList.remove('hidden');
@@ -558,7 +559,7 @@ function displayMessage(message) {
             // Check if mouse is still over message actions or emoji picker
             if (!messageActions.contains(e.relatedTarget) && !emojiPicker.contains(e.relatedTarget)) {
                 messageActions.classList.add('hidden');
-                emojiPicker.classList.add('hidden'); // Hide emoji picker on mouse leave
+                emojiPicker.classList.add('hidden'); // Also hide emoji picker on mouse leave
             }
         }
     });
@@ -567,20 +568,31 @@ function displayMessage(message) {
     // Mobile tap behavior for message actions
     messageElement.addEventListener('click', (event) => {
         if (window.innerWidth <= 768) {
+            // Check if the tap target is one of the action buttons or emoji options itself
+            // If so, let that specific listener handle it and don't toggle the actions container.
+            if (event.target.closest('.reply-btn') || event.target.closest('.emoji-toggle-btn') || event.target.closest('.delete-message-btn') || event.target.closest('.emoji-option')) {
+                return;
+            }
+
             // If another message's actions are visible, hide them first
             if (currentlyVisibleMessageActions && currentlyVisibleMessageActions !== messageActions) {
                 currentlyVisibleMessageActions.classList.add('hidden');
-                if (currentlyVisibleEmojiPickerForMessage) {
-                    currentlyVisibleEmojiPickerForMessage.classList.add('hidden');
-                    currentlyVisibleEmojiPickerForMessage = null;
+                // Also hide its associated emoji picker if it was visible
+                const prevEmojiPicker = currentlyVisibleMessageActions.closest('.message').querySelector('.emoji-picker');
+                if (prevEmojiPicker) {
+                    prevEmojiPicker.classList.add('hidden');
                 }
+                currentlyVisibleMessageActions = null;
+                currentlyVisibleEmojiPickerForMessage = null; // Clear this too
             }
 
             // Toggle current message actions
             messageActions.classList.toggle('hidden');
             if (!messageActions.classList.contains('hidden')) {
+                messageActions.classList.add('visible-on-tap'); // Add this class for mobile styling
                 currentlyVisibleMessageActions = messageActions;
             } else {
+                messageActions.classList.remove('visible-on-tap'); // Remove this class
                 currentlyVisibleMessageActions = null;
                 emojiPicker.classList.add('hidden'); // Also hide emoji picker if actions are hidden
                 currentlyVisibleEmojiPickerForMessage = null;
@@ -607,6 +619,7 @@ function displayMessage(message) {
 
             // Hide actions and emoji picker after replying
             messageActions.classList.add('hidden');
+            messageActions.classList.remove('visible-on-tap'); // Ensure mobile class is removed
             emojiPicker.classList.add('hidden');
             currentlyVisibleMessageActions = null;
             currentlyVisibleEmojiPickerForMessage = null;
@@ -648,6 +661,7 @@ function displayMessage(message) {
             currentlyVisibleEmojiPickerForMessage = null;
             if (window.innerWidth <= 768) {
                 messageActions.classList.add('hidden'); // Hide actions after selection on mobile
+                messageActions.classList.remove('visible-on-tap'); // Ensure mobile class is removed
                 currentlyVisibleMessageActions = null;
             }
         });
@@ -797,27 +811,31 @@ document.addEventListener('click', (event) => {
     }
 
     // Logic for hiding message actions/emoji picker when tapping elsewhere on mobile
-    if (window.innerWidth <= 768 && (currentlyVisibleMessageActions || currentlyVisibleEmojiPickerForMessage)) {
-        const clickedMessageElement = event.target.closest('.message');
-        const isClickOnReplyPreview = replyPreview.contains(event.target);
-        const isClickOnMessageInput = messageInput.contains(event.target);
-        const isClickOnSendButton = sendButton.contains(event.target);
+    if (window.innerWidth <= 768) {
+        // Only proceed if there's an active actions menu or emoji picker
+        if (currentlyVisibleMessageActions || currentlyVisibleEmojiPickerForMessage) {
+            const clickedMessageElement = event.target.closest('.message');
+            const isClickOnReplyPreview = replyPreview.contains(event.target);
+            const isClickOnMessageInput = messageInput.contains(event.target);
+            const isClickOnSendButton = sendButton.contains(event.target);
 
-        // If the click is not inside the currently visible message's actions/emoji picker,
-        // and not on a different message element, and not in the input area
-        if (
-            (!clickedMessageElement || (currentlyVisibleMessageActions && clickedMessageElement !== currentlyVisibleMessageActions.closest('.message'))) &&
-            !isClickOnReplyPreview &&
-            !isClickOnMessageInput &&
-            !isClickOnSendButton
-        ) {
-            if (currentlyVisibleMessageActions) {
-                currentlyVisibleMessageActions.classList.add('hidden');
-                currentlyVisibleMessageActions = null;
-            }
-            if (currentlyVisibleEmojiPickerForMessage) {
-                currentlyVisibleEmojiPickerForMessage.classList.add('hidden');
-                currentlyVisibleEmojiPickerForMessage = null;
+            // Check if the click is outside the currently active message actions/emoji picker
+            // and not within the message input area or reply preview.
+            if (
+                (!clickedMessageElement || (currentlyVisibleMessageActions && clickedMessageElement !== currentlyVisibleMessageActions.closest('.message'))) &&
+                !isClickOnReplyPreview &&
+                !isClickOnMessageInput &&
+                !isClickOnSendButton
+            ) {
+                if (currentlyVisibleMessageActions) {
+                    currentlyVisibleMessageActions.classList.add('hidden');
+                    currentlyVisibleMessageActions.classList.remove('visible-on-tap'); // Ensure mobile class is removed
+                    currentlyVisibleMessageActions = null;
+                }
+                if (currentlyVisibleEmojiPickerForMessage) {
+                    currentlyVisibleEmojiPickerForMessage.classList.add('hidden');
+                    currentlyVisibleEmojiPickerForMessage = null;
+                }
             }
         }
     }

@@ -289,6 +289,7 @@ body {
     display: flex;
     margin-bottom: 10px;
     align-items: flex-end;
+    position: relative; /* Needed for positioning message-actions and emoji-picker */
 }
 
 .message.sent {
@@ -299,13 +300,23 @@ body {
     justify-content: flex-start;
 }
 
+.message-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Default for received */
+}
+
+.message.sent .message-content-wrapper {
+    align-items: flex-end; /* Align content and info to the right for sent */
+}
+
 .message-content {
     max-width: 70%;
     padding: 10px 15px;
     border-radius: 18px;
     line-height: 1.4;
     word-wrap: break-word;
-    position: relative;
+    position: relative; /* For the emoji picker's absolute positioning */
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
@@ -324,35 +335,37 @@ body {
     border-bottom-right-radius: 2px;
 }
 
-/* Message Actions (Reply, Emoji, Delete) */
+/* Message Actions (Reply, Emoji Toggle, Delete) */
 .message-actions {
     position: absolute;
-    bottom: -15px; /* Adjust as needed */
     display: flex;
     align-items: center;
     gap: 5px;
     opacity: 0;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
     pointer-events: none; /* Hidden by default for interaction */
     z-index: 1; /* Ensure buttons are above other content */
     background-color: rgba(255, 255, 255, 0.9); /* Slight background for visibility */
     padding: 3px 8px;
     border-radius: 15px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    top: 50%; /* Vertically center relative to message */
+    transform: translateY(-50%);
+    white-space: nowrap; /* Prevent wrapping */
 }
 
 .message.sent .message-actions {
-    left: -100px; /* Position to the left of the sent message */
-    right: auto;
+    right: 100%; /* Position to the left of the sent message bubble */
+    margin-right: 10px; /* Space between bubble and actions */
 }
 
 .message.received .message-actions {
-    right: -100px; /* Position to the right of the received message */
-    left: auto;
+    left: 100%; /* Position to the right of the received message bubble */
+    margin-left: 10px; /* Space between bubble and actions */
 }
 
-.message-content:hover + .message-info + .message-actions, /* For desktop hover */
-.message-content:hover .message-actions {
+/* Desktop Hover: Make actions visible when hovering over the whole message element */
+.message:hover .message-actions {
     opacity: 1;
     pointer-events: auto;
 }
@@ -361,10 +374,23 @@ body {
 .message-actions.visible-on-tap {
     opacity: 1 !important;
     pointer-events: auto !important;
-    position: static; /* Let it flow with content in mobile */
+    position: static; /* Let it flow with content when tapped on mobile */
     margin-top: 5px; /* Add some space below message */
     box-shadow: none; /* Remove box-shadow for static position */
     background-color: transparent; /* No background when static */
+    transform: none; /* Reset transform for static position */
+    width: auto; /* Allow content to dictate width */
+    justify-content: center; /* Center buttons when static */
+}
+
+.message.sent .message-actions.visible-on-tap {
+    align-self: flex-end; /* Align to the right for sent messages when static */
+    margin-right: 0;
+}
+
+.message.received .message-actions.visible-on-tap {
+    align-self: flex-start; /* Align to the left for received messages when static */
+    margin-left: 0;
 }
 
 /* Buttons within message actions */
@@ -396,7 +422,6 @@ body {
     background-color: var(--messenger-light-grey);
 }
 
-
 .emoji-picker {
     display: flex;
     background-color: #fff;
@@ -405,17 +430,22 @@ body {
     padding: 5px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     gap: 5px;
-    z-index: 1;
-    position: absolute; /* Position relative to message content */
-    bottom: 35px; /* Above the action buttons */
-    left: 50%; /* Center horizontally */
+    z-index: 2; /* Higher z-index to be above actions */
+    position: absolute;
+    bottom: calc(100% + 5px); /* Position above the message bubble */
+    left: 50%; /* Center horizontally relative to message content */
     transform: translateX(-50%);
     white-space: nowrap; /* Prevent emojis from wrapping */
 }
 
+/* Adjust emoji picker position for sent/received to be relative to its own bubble */
 .message.sent .emoji-picker {
-    /* No change needed, inherits from general .emoji-picker */
+    transform: translateX(-50%); /* Keeps it centered above the sent bubble */
 }
+.message.received .emoji-picker {
+    transform: translateX(-50%); /* Keeps it centered above the received bubble */
+}
+
 
 .emoji-option {
     cursor: pointer;
@@ -585,20 +615,18 @@ body {
     }
 
     .message-actions {
-        bottom: -10px; /* Adjust for smaller screens */
+        /* Adjust positioning for smaller desktops if needed */
+        right: 100%;
+        margin-right: 10px;
     }
-
-    .message.sent .message-actions {
-        left: -90px;
-    }
-
     .message.received .message-actions {
-        right: -90px;
+        left: 100%;
+        margin-left: 10px;
     }
 
     .emoji-picker {
         padding: 3px;
-        bottom: 30px;
+        bottom: calc(100% + 5px); /* Keep it above the bubble */
     }
     .emoji-option {
         font-size: 1em;
@@ -749,31 +777,33 @@ body {
         font-size: 1em;
     }
 
-    /* On mobile, message actions might need to be repositioned */
+    /* On mobile, message actions are static and below the message */
     .message-actions {
-        position: static; /* Let it flow with content */
-        opacity: 1; /* Always visible for mobile tap logic */
+        position: static;
+        opacity: 1; /* Always visible when tapped */
         pointer-events: auto;
-        margin-top: 5px; /* Add some space below message */
-        justify-content: flex-end; /* Align actions to the right for sent, left for received */
-        box-shadow: none; /* Remove box-shadow for static position */
-        background-color: transparent; /* No background when static */
-    }
-    .message.received .message-actions {
-        justify-content: flex-start;
+        margin-top: 5px; /* Space below message content */
+        box-shadow: none;
+        background-color: transparent;
+        transform: none; /* Reset any transforms */
+        width: 100%; /* Take full width to center buttons if needed */
+        justify-content: center; /* Center buttons within the action row */
     }
 
-    .message-content:hover + .message-info + .message-actions, /* For desktop hover */
-    .message-content:hover .message-actions {
-        opacity: 1; /* Override hover opacity for mobile */
+    .message.sent .message-actions {
+        align-self: flex-end; /* Keep aligned to the right for sent messages */
+    }
+
+    .message.received .message-actions {
+        align-self: flex-start; /* Keep aligned to the left for received messages */
     }
 
     .emoji-picker {
-        position: static; /* Let it flow with content in mobile */
+        position: static; /* Flows with content */
         transform: none; /* Remove transform */
         box-shadow: none;
         background-color: transparent;
-        margin-top: 5px; /* Space between content and emojis */
+        margin-top: 5px; /* Space between actions and emojis if both are active */
         justify-content: center; /* Center emojis */
     }
 }

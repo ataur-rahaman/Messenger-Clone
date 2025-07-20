@@ -440,6 +440,9 @@ body {
 #clear-reply-btn:hover {
     color: #dc3545;
 }
+.reply-btn .fa-reply {
+    color: #ffffff;
+}
 
 
 #message-input-area > div:last-child { /* Targets the input and send button row */

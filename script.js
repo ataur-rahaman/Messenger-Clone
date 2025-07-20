@@ -1,14 +1,3 @@
-// Your Firebase web app's configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBWNIsFW0QKknbDHqhfWG7GU_GYKV-wAXM",
-  authDomain: "messenger-clone-9421f.firebaseapp.com",
-  databaseURL: "https://messenger-clone-9421f-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "messenger-clone-9421f",
-  storageBucket: "messenger-clone-9421f.firebasestorage.app",
-  messagingSenderId: "296040648748",
-  appId: "1:296040648748:web:589afe85ec371386fd0189"
-};
-
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
@@ -45,16 +34,27 @@ const backToChatBtn = document.getElementById('back-to-chat-btn'); // New: Back 
 
 const sidebar = document.getElementById('sidebar');
 
+// New DOM Elements for Reply
+const replyPreview = document.getElementById('reply-preview');
+const repliedMessageTextSpan = document.getElementById('replied-message-text');
+const clearReplyBtn = document.getElementById('clear-reply-btn');
+
+
 let currentUser = null;
 let currentChatId = 'general';
 let currentChatName = 'General Chat';
-let messageListener = null;
+let messageListener = null; // Listener for child_added
+let messageChangedListener = null; // New: Listener for child_changed
 let typingListener = null;
 
 let typingTimeout;
 const TYPING_INDICATOR_TIMEOUT = 1500;
 
 let currentlyVisibleDeleteBtn = null;
+let currentlyVisibleEmojiPicker = null; // New: To track visible emoji picker for mobile tap
+
+let currentRepliedMessage = null; // To store the message being replied to
+
 
 // Function to set CSS variable for accurate VH on mobile
 function setVhProperty() {
@@ -132,7 +132,7 @@ auth.onAuthStateChanged(async (user) => {
             if (userData) {
                 currentUser.displayName = userData.displayName || getDisplayName(currentUser.email);
                 currentUser.photoURL = userData.photoURL || 'https://via.placeholder.com/40';
-                
+
                 currentUserEmailSpan.textContent = currentUser.displayName;
                 userAvatar.src = currentUser.photoURL;
             } else {
@@ -167,6 +167,10 @@ auth.onAuthStateChanged(async (user) => {
             database.ref('messages/' + currentChatId).off('child_added', messageListener);
             messageListener = null;
         }
+        if (messageChangedListener) { // New: Clear child_changed listener
+            database.ref('messages/' + currentChatId).off('child_changed', messageChangedListener);
+            messageChangedListener = null;
+        }
         if (typingListener) {
             database.ref('typingIndicators/' + currentChatId).off('value', typingListener);
             typingListener = null;
@@ -179,6 +183,10 @@ auth.onAuthStateChanged(async (user) => {
         if (user && currentChatId) {
              database.ref('typingIndicators/' + currentChatId + '/' + user.uid).remove();
         }
+        // Clear any active reply
+        currentRepliedMessage = null;
+        replyPreview.classList.add('hidden');
+        repliedMessageTextSpan.textContent = '';
     }
 });
 
@@ -278,7 +286,7 @@ function loadUsers() {
             userElement.dataset.displayName = user.displayName;
             userElement.dataset.chatId = generateChatId(currentUser.uid, user.uid);
             userElement.dataset.chatName = user.displayName;
-            
+
             const friendAvatarUrl = user.photoURL || 'https://via.placeholder.com/30';
 
             userElement.innerHTML = `
@@ -306,14 +314,19 @@ function switchChat(newChatId, newChatName) {
         return;
     }
 
-    if (currentChatId === newChatId && messageListener) {
+    if (currentChatId === newChatId && messageListener && messageChangedListener) {
         updateActiveChatUI();
         return;
     }
 
+    // Detach existing listeners
     if (messageListener) {
         database.ref('messages/' + currentChatId).off('child_added', messageListener);
         messageListener = null;
+    }
+    if (messageChangedListener) {
+        database.ref('messages/' + currentChatId).off('child_changed', messageChangedListener);
+        messageChangedListener = null;
     }
     if (typingListener) {
         database.ref('typingIndicators/' + currentChatId).off('value', typingListener);
@@ -326,15 +339,34 @@ function switchChat(newChatId, newChatName) {
     currentChatName = newChatName;
     messagesContainer.innerHTML = '';
     typingIndicator.classList.add('hidden');
+    currentRepliedMessage = null; // Clear reply state on chat switch
+    replyPreview.classList.add('hidden');
+    repliedMessageTextSpan.textContent = '';
+
 
     updateActiveChatUI();
 
     const messagesRef = database.ref('messages/' + currentChatId).orderByChild('timestamp');
+
+    // Listener for new messages
     messageListener = messagesRef.on('child_added', (snapshot) => {
         const message = snapshot.val();
         displayMessage(message);
         scrollToBottom();
     });
+
+    // Listener for changes to existing messages (e.g., reactions added/removed)
+    messageChangedListener = messagesRef.on('child_changed', (snapshot) => {
+        const changedMessage = snapshot.val();
+        const existingMessageElement = messagesContainer.querySelector(`.message .delete-message-btn[data-message-id="${changedMessage.id}"]`)?.closest('.message');
+        if (existingMessageElement) {
+            // Re-render the message to update reactions/replies
+            existingMessageElement.remove();
+            displayMessage(changedMessage);
+            scrollToBottom(); // In case content size changes
+        }
+    });
+
 
     const typingRef = database.ref('typingIndicators/' + currentChatId);
     typingListener = typingRef.on('value', (snapshot) => {
@@ -413,7 +445,7 @@ function sendMessage() {
     const newMessageRef = database.ref('messages/' + currentChatId).push();
     const messageId = newMessageRef.key;
 
-    newMessageRef.set({
+    const messageData = {
         id: messageId,
         text: messageText,
         senderId: currentUser.uid,
@@ -421,9 +453,23 @@ function sendMessage() {
         senderDisplayName: currentUser.displayName || getDisplayName(currentUser.email),
         senderPhotoURL: currentUser.photoURL,
         timestamp: firebase.database.ServerValue.TIMESTAMP
-    })
+    };
+
+    if (currentRepliedMessage) {
+        messageData.repliedTo = {
+            id: currentRepliedMessage.id,
+            senderDisplayName: currentRepliedMessage.senderDisplayName,
+            text: currentRepliedMessage.text
+        };
+    }
+
+
+    newMessageRef.set(messageData)
     .then(() => {
         messageInput.value = '';
+        currentRepliedMessage = null; // Clear replied message state
+        replyPreview.classList.add('hidden'); // Hide reply preview
+        repliedMessageTextSpan.textContent = '';
     })
     .catch((error) => {
         console.error("Error sending message:", error);
@@ -448,12 +494,34 @@ function displayMessage(message) {
 
     const deleteButton = isSentByCurrentUser ? `<button class="delete-message-btn" data-message-id="${message.id}"><i class="fas fa-trash-alt"></i></button>` : '';
 
+    // New: Reply preview for the message being displayed
+    let repliedToHTML = '';
+    if (message.repliedTo) {
+        repliedToHTML = `
+            <div class="replied-to-message">
+                <span class="replied-to-sender">${message.repliedTo.senderDisplayName}:</span>
+                <span class="replied-to-text">${message.repliedTo.text}</span>
+            </div>
+        `;
+    }
+
     messageElement.innerHTML = `
         ${isSentByCurrentUser ? '' : messageAvatar}
         <div class="message-content-wrapper">
             <div class="message-content">
-                ${message.text}
+                ${repliedToHTML} ${message.text}
                 ${deleteButton}
+                <div class="message-actions">
+                    <button class="reply-btn" data-message-id="${message.id}" data-sender-display-name="${message.senderDisplayName}" data-message-text="${message.text}">
+                        <i class="fas fa-reply"></i>
+                    </button>
+                    <div class="emoji-picker hidden">
+                        <span class="emoji-option" data-emoji="👍" data-message-id="${message.id}">👍</span>
+                        <span class="emoji-option" data-emoji="❤️" data-message-id="${message.id}">❤️</span>
+                        <span class="emoji-option" data-emoji="😂" data-message-id="${message.id}">😂</span>
+                        <span class="emoji-option" data-emoji="😢" data-message-id="${message.id}">😢</span>
+                    </div>
+                </div>
             </div>
             <div class="message-info">
                 ${senderInfo}
@@ -461,10 +529,11 @@ function displayMessage(message) {
             </div>
         </div>
         ${isSentByCurrentUser ? messageAvatar : ''}
-    `;
+        <div class="message-reactions hidden"></div> `;
 
     messagesContainer.appendChild(messageElement);
 
+    // Attach event listeners for delete button (existing logic)
     if (isSentByCurrentUser) {
         const deleteBtn = messageElement.querySelector('.delete-message-btn');
         if (deleteBtn) {
@@ -494,6 +563,123 @@ function displayMessage(message) {
                 }
             });
         }
+    }
+
+
+    // New: Handle reply button click
+    const replyBtn = messageElement.querySelector('.reply-btn');
+    if (replyBtn) {
+        replyBtn.addEventListener('click', () => {
+            const messageId = replyBtn.dataset.messageId;
+            const senderDisplayName = replyBtn.dataset.senderDisplayName;
+            const messageText = replyBtn.dataset.messageText;
+
+            currentRepliedMessage = {
+                id: messageId,
+                senderDisplayName: senderDisplayName,
+                text: messageText
+            };
+            repliedMessageTextSpan.textContent = `${senderDisplayName}: ${messageText}`;
+            replyPreview.classList.remove('hidden');
+            messageInput.focus();
+
+            // Hide any currently visible emoji picker on reply
+            if (currentlyVisibleEmojiPicker) {
+                currentlyVisibleEmojiPicker.classList.add('hidden');
+                currentlyVisibleEmojiPicker = null;
+            }
+        });
+    }
+
+    // New: Handle emoji picker visibility on message hover/tap
+    const messageContent = messageElement.querySelector('.message-content');
+    const messageActions = messageElement.querySelector('.message-actions');
+    const emojiPicker = messageElement.querySelector('.emoji-picker');
+
+    if (messageContent && messageActions && emojiPicker) {
+        // Desktop hover behavior
+        messageContent.addEventListener('mouseenter', () => {
+            if (window.innerWidth > 768) {
+                messageActions.classList.remove('hidden');
+                messageActions.style.opacity = '1';
+                messageActions.style.pointerEvents = 'auto';
+            }
+        });
+        messageContent.addEventListener('mouseleave', (e) => {
+            // Check if mouse is still over message actions or emoji picker
+            if (window.innerWidth > 768 && !messageActions.contains(e.relatedTarget) && !emojiPicker.contains(e.relatedTarget)) {
+                messageActions.classList.add('hidden');
+                messageActions.style.opacity = '0';
+                messageActions.style.pointerEvents = 'none';
+            }
+        });
+
+        // Mobile tap behavior for message actions (including reply and emoji picker)
+        messageContent.addEventListener('click', (event) => {
+            if (window.innerWidth <= 768) {
+                // Prevent toggling if click is on reply or delete button already
+                if (event.target.closest('.reply-btn') || event.target.closest('.delete-message-btn') || event.target.closest('.emoji-option')) {
+                    return;
+                }
+
+                // Hide previously visible emoji picker/actions if different message is tapped
+                if (currentlyVisibleEmojiPicker && currentlyVisibleEmojiPicker !== emojiPicker) {
+                    currentlyVisibleEmojiPicker.closest('.message-actions').classList.add('hidden');
+                    currentlyVisibleEmojiPicker = null;
+                }
+
+                messageActions.classList.toggle('hidden');
+                if (!messageActions.classList.contains('hidden')) {
+                    currentlyVisibleEmojiPicker = emojiPicker; // Track the currently visible one
+                } else {
+                    currentlyVisibleEmojiPicker = null;
+                }
+            }
+        });
+
+
+        // Add event listeners for emoji options
+        emojiPicker.querySelectorAll('.emoji-option').forEach(emojiOption => {
+            emojiOption.addEventListener('click', () => {
+                const msgId = emojiOption.dataset.messageId;
+                const emoji = emojiOption.dataset.emoji;
+                addReaction(currentChatId, msgId, emoji);
+                if (window.innerWidth <= 768) {
+                    messageActions.classList.add('hidden'); // Hide actions after selection on mobile
+                    currentlyVisibleEmojiPicker = null;
+                }
+            });
+        });
+    }
+
+
+    // New: Render reactions
+    const reactionsContainer = messageElement.querySelector('.message-reactions');
+    if (reactionsContainer && message.reactions) {
+        reactionsContainer.innerHTML = ''; // Clear existing reactions
+        const uniqueEmojis = {}; // To count reactions per emoji
+        Object.values(message.reactions).forEach(reaction => {
+            uniqueEmojis[reaction.emoji] = (uniqueEmojis[reaction.emoji] || 0) + 1;
+        });
+
+        for (const emoji in uniqueEmojis) {
+            const reactionSpan = document.createElement('span');
+            reactionSpan.classList.add('reaction-bubble');
+            reactionSpan.textContent = `${emoji} ${uniqueEmojis[emoji]}`;
+            reactionSpan.dataset.emoji = emoji; // Store emoji for click
+            reactionSpan.dataset.messageId = message.id; // Store message ID for click
+
+            reactionSpan.addEventListener('click', () => {
+                addReaction(currentChatId, message.id, emoji); // Toggle reaction
+            });
+
+            reactionsContainer.appendChild(reactionSpan);
+        }
+        if (Object.keys(uniqueEmojis).length > 0) {
+            reactionsContainer.classList.remove('hidden');
+        }
+    } else if (reactionsContainer) {
+        reactionsContainer.classList.add('hidden');
     }
 }
 
@@ -549,7 +735,7 @@ function deleteChat(chatId) {
         .then(() => {
             console.log(`Chat ${chatId} messages deleted.`);
             alert(`Chat "${currentChatName}" has been cleared.`);
-            
+
             switchChat('general', 'General Chat');
         })
         .catch((error) => {
@@ -562,10 +748,46 @@ menuToggleBtn.addEventListener('click', () => {
     sidebar.classList.toggle('show-mobile');
 });
 
-// New: Event listener for the back button in the sidebar
+// Event listener for the back button in the sidebar
 backToChatBtn.addEventListener('click', () => {
     sidebar.classList.remove('show-mobile'); // Hide sidebar
 });
+
+// New: Add event listener for clearing reply preview
+clearReplyBtn.addEventListener('click', () => {
+    currentRepliedMessage = null;
+    replyPreview.classList.add('hidden');
+    repliedMessageTextSpan.textContent = '';
+});
+
+
+// New: Firebase logic for reactions
+function addReaction(chatId, messageId, emoji) {
+    if (!currentUser) {
+        alert("You must be logged in to add reactions.");
+        return;
+    }
+
+    const reactionRef = database.ref(`messages/${chatId}/${messageId}/reactions/${currentUser.uid}`);
+    reactionRef.once('value', (snapshot) => {
+        if (snapshot.exists() && snapshot.val().emoji === emoji) {
+            // User already reacted with this emoji, remove it
+            reactionRef.remove()
+                .then(() => console.log('Reaction removed'))
+                .catch(error => console.error('Error removing reaction:', error));
+        } else {
+            // Add or update reaction
+            reactionRef.set({
+                uid: currentUser.uid,
+                displayName: currentUser.displayName,
+                emoji: emoji,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            })
+            .then(() => console.log('Reaction added/updated'))
+            .catch(error => console.error('Error adding reaction:', error));
+        }
+    });
+}
 
 
 document.addEventListener('click', (event) => {
@@ -573,24 +795,42 @@ document.addEventListener('click', (event) => {
     if (window.innerWidth <= 768 && sidebar.classList.contains('show-mobile')) {
         const isClickInsideSidebar = sidebar.contains(event.target);
         const isClickOnToggleBtn = menuToggleBtn.contains(event.target);
-        const isClickOnBackButton = backToChatBtn.contains(event.target); // New check for back button
-        
-        if (!isClickInsideSidebar && !isClickOnToggleBtn && !isClickOnBackButton) {
+        const isClickOnBackButton = backToChatBtn.contains(event.target);
+        const isClickOnUserListItem = event.target.closest('#users-list li') !== null;
+        const isClickOnConversationListItem = event.target.closest('#conversation-list li') !== null;
+
+
+        if (!isClickInsideSidebar && !isClickOnToggleBtn && !isClickOnBackButton && !isClickOnUserListItem && !isClickOnConversationListItem) {
             sidebar.classList.remove('show-mobile');
         }
     }
 
     // Logic for hiding delete icon when tapping elsewhere
     if (window.innerWidth <= 768 && currentlyVisibleDeleteBtn) {
-        const isClickInsideMessage = event.target.closest('.message') !== null;
+        const isClickInsideMessageContent = event.target.closest('.message-content') !== null;
         const isClickOnDeleteButton = currentlyVisibleDeleteBtn.contains(event.target);
 
-        if (!isClickOnDeleteButton && (!isClickInsideMessage || (isClickInsideMessage && !event.target.closest('.message').querySelector('.delete-message-btn.visible-on-tap')))) {
+        if (!isClickOnDeleteButton && (!isClickInsideMessageContent || (isClickInsideMessageContent && !event.target.closest('.message-content').querySelector('.delete-message-btn.visible-on-tap')))) {
             currentlyVisibleDeleteBtn.classList.remove('visible-on-tap');
             currentlyVisibleDeleteBtn = null;
         }
     }
+
+    // New: Logic for hiding emoji picker/message actions when tapping elsewhere on mobile
+    if (window.innerWidth <= 768 && currentlyVisibleEmojiPicker) {
+        const isClickInsideCurrentMessage = currentlyVisibleEmojiPicker.closest('.message-content')?.contains(event.target) || false;
+        const isClickOnReplyPreview = replyPreview.contains(event.target);
+        const isClickOnMessageInput = messageInput.contains(event.target);
+        const isClickOnSendButton = sendButton.contains(event.target);
+
+        // If the click is not inside the currently visible emoji picker's message, and not on the input area
+        if (!isClickInsideCurrentMessage && !isClickOnReplyPreview && !isClickOnMessageInput && !isClickOnSendButton) {
+            currentlyVisibleEmojiPicker.closest('.message-actions').classList.add('hidden');
+            currentlyVisibleEmojiPicker = null;
+        }
+    }
 });
+
 
 // Initial UI update for general chat on page load
 updateActiveChatUI();

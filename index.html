@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -34,7 +35,7 @@
                     <button id="logout-btn">Logout</button>
                 </div>
             </div>
-            
+
             <h3>Conversations</h3>
             <ul id="conversation-list">
                 <li class="active-chat" data-chat-id="general" data-chat-name="General Chat">General Chat</li>
@@ -57,6 +58,10 @@
             <div id="messages-container">
                 </div>
             <div id="message-input-area">
+                <div id="reply-preview" class="hidden">
+                    <p>Replying to: <span id="replied-message-text"></span></p>
+                    <button id="clear-reply-btn"><i class="fas fa-times"></i></button>
+                </div>
                 <input type="text" id="message-input" placeholder="Type a message...">
                 <button id="send-button"><i class="fas fa-paper-plane"></i> </button>
             </div>

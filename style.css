@@ -454,3 +454,7 @@ body.dark-mode ::-webkit-scrollbar-thumb {
   gap: 3px;
   font-size: 22px;
 }
+
+.emoji-picker-popup {
+    left: 800px !important;
+}
